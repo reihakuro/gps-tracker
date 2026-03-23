@@ -2,8 +2,16 @@
 #define GYR_H
 #include <Arduino.h>
 
-extern float gForceX, gForceY, gForceZ;
-extern float rotX, rotY, rotZ;
+struct MPUData {
+    float gForceX;
+    float gForceY;
+    float gForceZ;
+    float rotX;
+    float rotY;
+    float rotZ;
+};
+
+extern QueueHandle_t mpuQueue;
 
 void readGyro(void *parameter);
 #endif

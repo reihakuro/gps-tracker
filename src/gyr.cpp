@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include "gyr.h"
 
 #define SDA 21 // default SDA pin for ESP32, can be changed in Wire.begin() if needed
 #define SCL 22 // default SCL pin for ESP32, can be changed in Wire.begin() if needed
@@ -19,6 +20,7 @@ void readGyro(void *parameter) {
     Wire.write(0x6B); // Power management register
     Wire.write(0x00); // Wake up the MPU-6050
     Wire.endTransmission(true);
+    MPUData currentData;
   for (;;){
     // Open a connection to the MPU-6050 and request data
     Wire.beginTransmission(MPU_ADDR);
