@@ -1,13 +1,6 @@
 #include <Arduino.h>
+#include "wifi_setup.h"
 // put function declarations here:
-void wifiSetup(void *parameter){
-  // WiFi setup code here
-  for (;;){
-    // WiFi management code here
-
-    vTaskDelay(1000 / portTICK_PERIOD_MS); 
-  }
-}
 
 void readGPS(void *parameter) {
   for (;;){
@@ -19,6 +12,7 @@ void readGPS(void *parameter) {
 
 void setup() {
   // put your setup code here, to run once:
+  Serial.begin(115200);
   xTaskCreatePinnedToCore(
     readGPS,          // Function that implements the task.
     "Read GPS",  // Text name for the task.
