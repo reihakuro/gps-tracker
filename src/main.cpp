@@ -1,14 +1,9 @@
 #include <Arduino.h>
 #include "wifi_setup.h"
+#include "gps.h"
 // put function declarations here:
 
-void readGPS(void *parameter) {
-  for (;;){
-    // read GPS data
 
-    vTaskDelay(1000 / portTICK_PERIOD_MS); 
-  }
-}
 
 void setup() {
   // put your setup code here, to run once:
