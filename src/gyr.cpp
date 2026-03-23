@@ -48,9 +48,18 @@ void readGyro(void *parameter) {
       rotX = gyroX / 131.0; // MPU-6050 has a sensitivity of 131 LSB/(°/s)
       rotY = gyroY / 131.0;
       rotZ = gyroZ / 131.0;
-     // tempRaw is in raw value, need to convert to °C
-      float temp = (tempRaw / 340.0) + 36.53;
+      // tempRaw is in raw value, need to convert to °C
+      // float temp = (tempRaw / 340.0) + 36.53;
+      // Send the data to the queue
+      currentData.gForceX = gForceX;
+      currentData.gForceY = gForceY;
+      currentData.gForceZ = gForceZ;
+      currentData.rotX = rotX;
+      currentData.rotY = rotY;
+      currentData.rotZ = rotZ;
+      xQueueSend(mpuQueue, &currentData, portMAX_DELAY);
     }
+    else ; // handle error if needed
     vTaskDelay(1000 / portTICK_PERIOD_MS); 
   }
   vTaskDelete(NULL);
