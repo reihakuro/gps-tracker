@@ -1,9 +1,8 @@
 #include <Arduino.h>
 #include "wifi_setup.h"
 #include "gps.h"
+#include "gyr.h"
 // put function declarations here:
-
-
 
 void setup() {
   // put your setup code here, to run once:
