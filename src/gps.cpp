@@ -8,10 +8,12 @@ TinyGPSPlus gps;
 
 void readGPS(void *parameter) {
   GPSSerial.begin(9600, SERIAL_8N1, 16, 17);
-  uint32_t lastPrintTime = 0;
+  
+  GPSData currentGPS;
+  //uint32_t lastPrintTime = 0; // this parameter is for debugging, can be removed
 
-  for (;;){
-    /*while (GPSSerial.available() > 0) {
+  for (;;)  {
+    while (GPSSerial.available() > 0) {
             if (gps.encode(GPSSerial.read())) {
                 
                 if (gps.location.isValid()) {
@@ -21,17 +23,23 @@ void readGPS(void *parameter) {
                     currentGPS.speed = gps.speed.kmph();
                     currentGPS.satellites = gps.satellites.value();
                     currentGPS.isValid = true;
+
+                    xQueueSend(gpsQueue, &currentGPS, 0);
                 } else {
                     currentGPS.isValid = false;
                 }
             }
-        }*/
-    while (GPSSerial.available() > 0) {
-        char c = GPSSerial.read();
-        Serial.print(c);
-    }
+        }
+
+    // This is a debugging block to print raw GPS data, can be removed
+
+    //while (GPSSerial.available() > 0) {
+    //    char c = GPSSerial.read();
+    //    Serial.print(c);
+    //}
+
         /*
-        //Debug
+        //
         if (millis() - lastPrintTime > 1000) {
         if (currentGPS.isValid) {
             Serial.printf("Lat: %.6f, Lon: %.6f, Sat: %d\n", 
@@ -39,12 +47,13 @@ void readGPS(void *parameter) {
                           currentGPS.longitude, 
                           currentGPS.satellites);
         } else {
-            Serial.println("Đang chờ tín hiệu GPS (No Fix)... Hãy mang mạch ra ngoài trời.");
+            Serial.println("No signal.");
         }
-        lastPrintTime = millis(); // Cập nhật lại mốc thời gian
+        lastPrintTime = millis(); 
+        
     }
         */
-    vTaskDelay(1000 / portTICK_PERIOD_MS); 
+    vTaskDelay(10 / portTICK_PERIOD_MS); 
   }
   vTaskDelete(NULL);
 }

@@ -9,6 +9,6 @@ struct GPSData {
     int satellites;
     bool isValid;
 };
-extern GPSData currentGPS;
+extern QueueHandle_t gpsQueue;
 void readGPS(void *parameter);
 #endif
