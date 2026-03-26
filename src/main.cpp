@@ -4,6 +4,7 @@
 #include "gyr.h"
 
 QueueHandle_t mpuQueue;
+GPSData currentGPS;
 // put function declarations here:
 
 void setup() {
@@ -12,13 +13,13 @@ void setup() {
   if (mpuQueue == NULL) {
         Serial.println("Loi tao Queue!");
   }
-  // Serial.begin(115200);
+  Serial.begin(115200);
 
   // RTOS tasks creation here:
   xTaskCreatePinnedToCore(
     readGyro,          // Function that implements the task.
     "Read Gyroscope",  // Text name for the task.
-    10000,            // Stack size in words, not bytes.
+    4096,            // Stack size in words, not bytes.
     NULL,             // Parameter passed into the task.
     1,                // Priority at which the task is created.
     NULL,             // Used to pass out the created task's handle.
@@ -28,7 +29,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     readGPS,          // Function that implements the task.
     "Read GPS",  // Text name for the task.
-    10000,            // Stack size in words, not bytes.
+    4096,            // Stack size in words, not bytes.
     NULL,             // Parameter passed into the task.
     1,                // Priority at which the task is created.
     NULL,             // Used to pass out the created task's handle.
@@ -38,7 +39,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     wifiSetup,        // Function that implements the task.
     "WiFi Setup",  // Text name for the task.
-    10000,            // Stack size in words, not bytes.
+    4096,            // Stack size in words, not bytes.
     NULL,             // Parameter passed into the task.
     1,                // Priority at which the task is created.
     NULL,             // Used to pass out the created task's handle.

@@ -57,9 +57,16 @@ void readGyro(void *parameter) {
       currentData.rotX = rotX;
       currentData.rotY = rotY;
       currentData.rotZ = rotZ;
-      xQueueSend(mpuQueue, &currentData, portMAX_DELAY);
+
+      //Serial.printf("MPU6050 -> Accel (g): X=%.2f, Y=%.2f, Z=%.2f | Gyro (°/s): X=%.2f, Y=%.2f, Z=%.2f\n", 
+      //              gForceX, gForceY, gForceZ, rotX, rotY, rotZ);
+
+      xQueueSend(mpuQueue, &currentData, 0);
     }
-    else ; // handle error if needed
+    else {
+        // Cảnh báo nếu không đọc đủ 14 bytes (thường do lỏng dây hoặc nhiễu)
+        Serial.println("Lỗi: Không đọc được dữ liệu từ MPU6050! Kiểm tra lại dây I2C.");
+    }; // handle error if needed
     vTaskDelay(1000 / portTICK_PERIOD_MS); 
   }
   vTaskDelete(NULL);
