@@ -14,3 +14,7 @@
 *.a
 *.ln
 *.txt
+*.zip
+*.tar.gz
+*.7z
+include/key.h
