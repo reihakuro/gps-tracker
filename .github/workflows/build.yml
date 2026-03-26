@@ -19,6 +19,17 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Initial file
+      run: |
+        mkdir -p include
+        echo '#ifndef KEY_H' > include/key.h
+        echo '#define KEY_H' >> include/key.h
+        echo '#define SSID "dummy"' >> include/key.h
+        echo '#define PASSWORD "dummy"' >> include/key.h
+        echo '#define API_KEY "dummy"' >> include/key.h
+        echo '#define DATABASE_URL "dummy"' >> include/key.h
+        echo '#endif' >> include/key.h
+
     - name: PlatformIO Core
       run: |
         python -m pip install --upgrade pip
