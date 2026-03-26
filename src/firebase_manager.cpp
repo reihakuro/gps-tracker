@@ -13,7 +13,6 @@
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
-bool signupOK = false;
 
 void firebaseTask(void *parameter) {
     while (WiFi.status() != WL_CONNECTED) {
@@ -23,13 +22,8 @@ void firebaseTask(void *parameter) {
     config.api_key = API_KEY;
     config.database_url = DATABASE_URL;
 
-    if (Firebase.signUp(&config, &auth, "", "")) {
-        signupOK = true;
-    } else {
-        //Serial.printf("No connection to Firebase: %s\n", config.signer.signupError.message.c_str());
-    }
+    config.signer.test_mode = true;
 
-    config.token_status_callback = tokenStatusCallback;
     Firebase.begin(&config, &auth);
     Firebase.reconnectWiFi(true);
 
@@ -37,7 +31,7 @@ void firebaseTask(void *parameter) {
     GPSData gpsData;
 
     for (;;) {
-        if (Firebase.ready() && signupOK) {
+        if (Firebase.ready()) {
             FirebaseJson json;
             bool hasData = false;
 
@@ -61,13 +55,13 @@ void firebaseTask(void *parameter) {
                 }
             }
 
-            //if (hasData) {
-            //    if (Firebase.RTDB.setJSON(&fbdo, "/tracker/live", &json)) {
-            //        Serial.println("Đã bắn data lên Firebase thành công!");
-            //    } else {
-            //        Serial.println("Lỗi gửi Firebase: " + fbdo.errorReason());
-            //    }
-            //} //Debug block, can be removed
+            if (hasData) {
+                if (Firebase.RTDB.setJSON(&fbdo, "/tracker/live", &json)) {
+                    Serial.println("Firebase update successful");
+                } else {
+                    Serial.printf("Firebase error: %s\n", fbdo.errorReason().c_str());
+                }
+            } //Debug block, can be removed
         }
         
         vTaskDelay(2000 / portTICK_PERIOD_MS);
