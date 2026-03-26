@@ -8,9 +8,7 @@
 #include "firebase_manager.h"
 #include "gyr.h"
 #include "gps.h"
-
-#define API_KEY "DÁN_API_KEY_CỦA_BẠN_VÀO_ĐÂY"
-#define DATABASE_URL "DÁN_DATABASE_URL_CỦA_BẠN_VÀO_ĐÂY"
+#include "key.h"
 
 FirebaseData fbdo;
 FirebaseAuth auth;
