@@ -1,0 +1,42 @@
+name: Linter
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest 
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Python setup
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: PlatformIO Core
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+
+    - name: Init files
+      run: |
+        mkdir -p include
+        echo '#ifndef KEY_H' > include/key.h
+        echo '#define KEY_H' >> include/key.h
+        echo '#define SSID "dummy"' >> include/key.h
+        echo '#define PASSWORD "dummy"' >> include/key.h
+        echo '#define FIREBASE_API_KEY "dummy"' >> include/key.h
+        echo '#define FIREBASE_DATABASE_URL "dummy"' >> include/key.h
+        echo '#endif' >> include/key.h
+
+    - name: Static Code Analysis
+      run: pio check --skip-packages
+
+    - name: Compile
+      run: pio run
