@@ -2,18 +2,18 @@
 #include "wifi_setup.h"
 #include "gps.h"
 #include "gyr.h"
-
+// Global variables and definitions here:
 QueueHandle_t mpuQueue;
-GPSData currentGPS;
+QueueHandle_t gpsQueue;
+
 // put function declarations here:
 
 void setup() {
   // put your setup code here, to run once:
   mpuQueue = xQueueCreate(5, sizeof(MPUData));
-  if (mpuQueue == NULL) {
-        Serial.println("Loi tao Queue!");
-  }
-  Serial.begin(115200);
+  gpsQueue = xQueueCreate(5, sizeof(GPSData));
+  
+  //Serial.begin(115200); // Uncomment for debugging
 
   // RTOS tasks creation here:
   xTaskCreatePinnedToCore(
