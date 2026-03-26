@@ -31,8 +31,8 @@ jobs:
         echo '#define KEY_H' >> include/key.h
         echo '#define SSID "dummy"' >> include/key.h
         echo '#define PASSWORD "dummy"' >> include/key.h
-        echo '#define FIREBASE_API_KEY "dummy"' >> include/key.h
-        echo '#define FIREBASE_DATABASE_URL "dummy"' >> include/key.h
+        echo '#define API_KEY "dummy"' >> include/key.h
+        echo '#define DATABASE_URL "dummy"' >> include/key.h
         echo '#endif' >> include/key.h
 
     - name: Static Code Analysis
