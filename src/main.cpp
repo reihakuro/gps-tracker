@@ -2,6 +2,8 @@
 #include "wifi_setup.h"
 #include "gps.h"
 #include "gyr.h"
+#include "firebase_manager.h"
+
 // Global variables and definitions here:
 QueueHandle_t mpuQueue;
 QueueHandle_t gpsQueue;
@@ -40,6 +42,16 @@ void setup() {
     wifiSetup,        // Function that implements the task.
     "WiFi Setup",  // Text name for the task.
     4096,            // Stack size in words, not bytes.
+    NULL,             // Parameter passed into the task.
+    1,                // Priority at which the task is created.
+    NULL,             // Used to pass out the created task's handle.
+    0               // Core where the task should run. 0 or 1.
+  );
+
+  xTaskCreatePinnedToCore(
+    firebaseTask,        // Function that implements the task.
+    "Firebase Manager",  // Text name for the task.
+    8192,            // Stack size in words, not bytes.
     NULL,             // Parameter passed into the task.
     1,                // Priority at which the task is created.
     NULL,             // Used to pass out the created task's handle.
