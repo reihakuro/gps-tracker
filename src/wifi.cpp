@@ -12,7 +12,7 @@ void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
   }
 }
 
-void wifiSetup(void* parameter) {
+void wifiSetup(void *parameter) {
   // Gắn chuông báo thức vào hệ thống WiFi của ESP32
   WiFi.onEvent(WiFiStationDisconnected,
                WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);

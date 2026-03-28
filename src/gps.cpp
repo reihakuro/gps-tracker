@@ -4,10 +4,10 @@
 #include <HardwareSerial.h>
 #include <TinyGPS++.h>
 
-HardwareSerial GPSSerial(2);  // Use UART2 for GPS, can be changed if needed
+HardwareSerial GPSSerial(2); // Use UART2 for GPS, can be changed if needed
 TinyGPSPlus gps;
 
-void readGPS(void* parameter) {
+void readGPS(void *parameter) {
   GPSSerial.begin(9600, SERIAL_8N1, 16, 17);
 
   GPSData currentGPS;

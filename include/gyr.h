@@ -13,5 +13,5 @@ struct MPUData {
 
 extern QueueHandle_t mpuQueue;
 
-void readGyro(void* parameter);
+void readGyro(void *parameter);
 #endif

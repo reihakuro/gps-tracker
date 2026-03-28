@@ -10,5 +10,5 @@ struct GPSData {
   bool isValid;
 };
 extern QueueHandle_t gpsQueue;
-void readGPS(void* parameter);
+void readGPS(void *parameter);
 #endif

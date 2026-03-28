@@ -14,7 +14,7 @@ FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-void firebaseTask(void* parameter) {
+void firebaseTask(void *parameter) {
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
@@ -61,7 +61,7 @@ void firebaseTask(void* parameter) {
         } else {
           Serial.printf("Firebase error: %s\n", fbdo.errorReason().c_str());
         }
-      }  // Debug block, can be removed
+      } // Debug block, can be removed
     }
 
     vTaskDelay(2000 / portTICK_PERIOD_MS);

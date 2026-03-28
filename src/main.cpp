@@ -19,40 +19,40 @@ void setup() {
   // Serial.begin(115200); // Uncomment for debugging
 
   // RTOS tasks creation here:
-  xTaskCreatePinnedToCore(readGyro,  // Function that implements the task.
-                          "Read Gyroscope",  // Text name for the task.
-                          4096,              // Stack size in words, not bytes.
-                          NULL,              // Parameter passed into the task.
-                          1,     // Priority at which the task is created.
-                          NULL,  // Used to pass out the created task's handle.
-                          1      // Core where the task should run. 0 or 1.
+  xTaskCreatePinnedToCore(readGyro, // Function that implements the task.
+                          "Read Gyroscope", // Text name for the task.
+                          4096,             // Stack size in words, not bytes.
+                          NULL,             // Parameter passed into the task.
+                          1,    // Priority at which the task is created.
+                          NULL, // Used to pass out the created task's handle.
+                          1     // Core where the task should run. 0 or 1.
   );
 
-  xTaskCreatePinnedToCore(readGPS,     // Function that implements the task.
-                          "Read GPS",  // Text name for the task.
-                          4096,        // Stack size in words, not bytes.
-                          NULL,        // Parameter passed into the task.
-                          1,           // Priority at which the task is created.
-                          NULL,  // Used to pass out the created task's handle.
-                          1      // Core where the task should run. 0 or 1.
+  xTaskCreatePinnedToCore(readGPS,    // Function that implements the task.
+                          "Read GPS", // Text name for the task.
+                          4096,       // Stack size in words, not bytes.
+                          NULL,       // Parameter passed into the task.
+                          1,          // Priority at which the task is created.
+                          NULL, // Used to pass out the created task's handle.
+                          1     // Core where the task should run. 0 or 1.
   );
 
-  xTaskCreatePinnedToCore(wifiSetup,     // Function that implements the task.
-                          "WiFi Setup",  // Text name for the task.
-                          4096,          // Stack size in words, not bytes.
-                          NULL,          // Parameter passed into the task.
-                          1,     // Priority at which the task is created.
-                          NULL,  // Used to pass out the created task's handle.
-                          0      // Core where the task should run. 0 or 1.
+  xTaskCreatePinnedToCore(wifiSetup,    // Function that implements the task.
+                          "WiFi Setup", // Text name for the task.
+                          4096,         // Stack size in words, not bytes.
+                          NULL,         // Parameter passed into the task.
+                          1,    // Priority at which the task is created.
+                          NULL, // Used to pass out the created task's handle.
+                          0     // Core where the task should run. 0 or 1.
   );
 
-  xTaskCreatePinnedToCore(firebaseTask,  // Function that implements the task.
-                          "Firebase Manager",  // Text name for the task.
-                          8192,  // Stack size in words, not bytes.
-                          NULL,  // Parameter passed into the task.
-                          1,     // Priority at which the task is created.
-                          NULL,  // Used to pass out the created task's handle.
-                          0      // Core where the task should run. 0 or 1.
+  xTaskCreatePinnedToCore(firebaseTask, // Function that implements the task.
+                          "Firebase Manager", // Text name for the task.
+                          8192,               // Stack size in words, not bytes.
+                          NULL,               // Parameter passed into the task.
+                          1,    // Priority at which the task is created.
+                          NULL, // Used to pass out the created task's handle.
+                          0     // Core where the task should run. 0 or 1.
   );
 }
 void loop() {

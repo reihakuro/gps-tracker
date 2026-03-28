@@ -5,5 +5,5 @@
 
 extern TaskHandle_t wifiTaskHandle;
 
-void wifiSetup(void* parameter);
+void wifiSetup(void *parameter);
 #endif
