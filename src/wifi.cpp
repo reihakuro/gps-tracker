@@ -1,32 +1,33 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include "wifi_setup.h"
+
 #include "key.h"
+#include "wifi_setup.h"
 
 TaskHandle_t wifiTaskHandle = NULL;
 
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
   if (wifiTaskHandle != NULL) {
-    xTaskNotifyGive(wifiTaskHandle); 
+    xTaskNotifyGive(wifiTaskHandle);
   }
 }
 
-void wifiSetup(void *parameter) {
+void wifiSetup(void* parameter) {
   // Gắn chuông báo thức vào hệ thống WiFi của ESP32
-  WiFi.onEvent(WiFiStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+  WiFi.onEvent(WiFiStationDisconnected,
+               WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
   WiFi.begin(SSID, PASSWORD);
   Serial.println("Dang khoi dong WiFi...");
 
   for (;;) {
     if (WiFi.status() == WL_CONNECTED) {
-      ulTaskNotifyTake(pdTRUE, portMAX_DELAY); 
-      //Serial.println("Reconnecting to WiFi...");
-    } 
-    else {
-      //Serial.println("Finding WiFi...");
+      ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+      // Serial.println("Reconnecting to WiFi...");
+    } else {
+      // Serial.println("Finding WiFi...");
       WiFi.reconnect();
-      vTaskDelay(5000 / portTICK_PERIOD_MS); 
+      vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
   }
 }
