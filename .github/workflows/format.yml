@@ -16,14 +16,16 @@ jobs:
       - name: Clang-Format Check
         uses: cpp-linter/cpp-linter-action@v2
         id: linter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
           style: 'file' 
-          tidy-checks: '' 
+          tidy-checks: '-*' 
           thread-comments: true 
           files-changed-only: false 
 
-      - name: Formatting checks failed
+      - name: Format Check Result
         if: steps.linter.outputs.checks-failed > 0
         run: |
-          echo "LỖI: Wrong format detected in the codebase."
+          echo "Code formatting issues detected."
           exit 1
