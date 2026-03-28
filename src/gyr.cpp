@@ -17,6 +17,10 @@ int16_t tempRaw;
 float gForceX, gForceY, gForceZ;
 float rotX, rotY, rotZ;
 
+float gyroOffsetX = 0;
+float gyroOffsetY = 0;
+float gyroOffsetZ = 0;
+
 float convertRawGyroToDps(int16_t rawValue) { return (float)rawValue / 131.0; }
 
 float convertRawAccelToG(int16_t rawValue) { return (float)rawValue / 16384.0; }
@@ -28,6 +32,29 @@ float applyDeadband(float value, float threshold) {
   return value;
 }
 
+void calibrateGyro() {
+  long sumX = 0, sumY = 0, sumZ = 0;
+  int numSamples = 200;
+
+  for (int i = 0; i < numSamples; i++) {
+    Wire.beginTransmission(MPU_ADDR);
+    Wire.write(0x43);
+    Wire.endTransmission(false);
+    Wire.requestFrom(MPU_ADDR, 6, true);
+
+    if (Wire.available() == 6) {
+      sumX += (Wire.read() << 8 | Wire.read());
+      sumY += (Wire.read() << 8 | Wire.read());
+      sumZ += (Wire.read() << 8 | Wire.read());
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
+
+  gyroOffsetX = (float)sumX / numSamples;
+  gyroOffsetY = (float)sumY / numSamples;
+  gyroOffsetZ = (float)sumZ / numSamples;
+}
+
 void readGyro(void* parameter) {
   Wire.begin();
   // Wire.setClock(400000);
@@ -35,6 +62,7 @@ void readGyro(void* parameter) {
   Wire.write(0x6B);  // Power management register
   Wire.write(0x00);  // Wake up the MPU-6050
   Wire.endTransmission(true);
+  calibrateGyro();
   MPUData currentData;
   for (;;) {
     // Open a connection to the MPU-6050 and request data
@@ -54,20 +82,22 @@ void readGyro(void* parameter) {
       gyroX = Wire.read() << 8 | Wire.read();
       gyroY = Wire.read() << 8 | Wire.read();
       gyroZ = Wire.read() << 8 | Wire.read();
+
       // accelX, accelY, accelZ are in raw values, need to convert to g's
       gForceX = convertRawAccelToG(accelX);
       gForceY = convertRawAccelToG(accelY);
       gForceZ = convertRawAccelToG(accelZ);
       // gyroX, gyroY, gyroZ are in raw values, need to convert to °/s
-      float rawRotX = convertRawGyroToDps(gyroX);
-      float rawRotY = convertRawGyroToDps(gyroY);
-      float rawRotZ = convertRawGyroToDps(gyroZ);
+      float rawRotX = convertRawGyroToDps(gyroX - gyroOffsetX);
+      float rawRotY = convertRawGyroToDps(gyroY - gyroOffsetY);
+      float rawRotZ = convertRawGyroToDps(gyroZ - gyroOffsetZ);
 
-      rotX = applyDeadband(rawRotX, 1.5);
-      rotY = applyDeadband(rawRotY, 1.5);
-      rotZ = applyDeadband(rawRotZ, 1.5);
+      rotX = applyDeadband(rawRotX, 1.0);
+      rotY = applyDeadband(rawRotY, 1.0);
+      rotZ = applyDeadband(rawRotZ, 1.0);
       // tempRaw is in raw value, need to convert to °C
       // float temp = (tempRaw / 340.0) + 36.53;
+
       // Send the data to the queue
       currentData.gForceX = gForceX;
       currentData.gForceY = gForceY;
@@ -76,9 +106,10 @@ void readGyro(void* parameter) {
       currentData.rotY = rotY;
       currentData.rotZ = rotZ;
 
-      // Serial.printf("MPU6050 -> Accel (g): X=%.2f, Y=%.2f, Z=%.2f | Gyro
-      // (°/s): X=%.2f, Y=%.2f, Z=%.2f\n",
-      //               gForceX, gForceY, gForceZ, rotX, rotY, rotZ);
+      Serial.printf(
+          "MPU6050 -> Accel (g): X=%.2f, Y=%.2f, Z=%.2f | Gyro\
+      (°/s): X=%.2f, Y=%.2f, Z=%.2f\n",
+          gForceX, gForceY, gForceZ, rotX, rotY, rotZ);
 
       xQueueSend(mpuQueue, &currentData, 0);
     } else {
