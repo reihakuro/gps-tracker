@@ -16,14 +16,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Cài đặt Clang-Format
+      - name: Clang-Format
         run: sudo apt-get install -y clang-format
 
-      - name: Chạy Format tự động
+      - name: Format code with Clang-Format
         run: |
           find src include -name '*.cpp' -o -name '*.h' | xargs clang-format -i -style=file
 
-      - name: Tự động Commit và Push ngược lên Github
+      - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "style: tự động format code chuẩn Google"
+          commit_message: "Style: Auto-format code with Clang-Format"

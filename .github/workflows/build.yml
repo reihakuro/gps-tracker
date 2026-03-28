@@ -37,3 +37,12 @@ jobs:
 
     - name: Compile
       run: pio run
+
+    - name: Packaging firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: esp32-gps-tracker-firmware 
+        path: |
+          .pio/build/nodemcu-32s/firmware.bin
+          .pio/build/nodemcu-32s/partitions.bin
+        retention-days: 7 
