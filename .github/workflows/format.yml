@@ -1,39 +1,29 @@
-name: Check Code Formatting
+name: Auto Format Code
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+
+permissions:
+  contents: write
 
 jobs:
-  format-check:
+  format:
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: read
-      pull-requests: write
-      checks: write
-      statuses: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Clang-Format Check
-        uses: cpp-linter/cpp-linter-action@v2
-        id: linter
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
-          style: 'file' 
-          tidy-checks: '-*' 
-          thread-comments: true 
-          files-changed-only: false 
-          
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Format Check Result
-        if: steps.linter.outputs.checks-failed > 0
+      - name: Cài đặt Clang-Format
+        run: sudo apt-get install -y clang-format
+
+      - name: Chạy Format tự động
+        run: |
+          find src include -name '*.cpp' -o -name '*.h' | xargs clang-format -i -style=file
+
+      - name: Tự động Commit và Push ngược lên Github
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-            commit_message: 'Format: Auto-format code'
+          commit_message: "style: tự động format code chuẩn Google"
