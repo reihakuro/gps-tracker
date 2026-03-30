@@ -12,7 +12,7 @@ void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
   }
 }
 
-void wifiSetup(void* parameter) {
+void wifiSetup(void *parameter) {
   WiFi.onEvent(WiFiStationDisconnected,
                WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
