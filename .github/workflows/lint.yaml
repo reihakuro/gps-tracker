@@ -36,7 +36,10 @@ jobs:
         echo '#endif' >> include/key.h
 
     - name: Static Code Analysis
-      run: pio check --skip-packages
+      run: pio check -e nodemcu-32s --skip-packages
 
     - name: Compile
-      run: pio run
+      run: pio run -e nodemcu-32s
+
+    - name: Run Unit Tests
+      run: pio test -e native
