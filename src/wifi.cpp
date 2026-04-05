@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiManager.h>
 
-#include "key.h"
 #include "wifi_setup.h"
 
 TaskHandle_t wifiTaskHandle = NULL;
@@ -12,12 +12,23 @@ void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
   }
 }
 
-void wifiSetup(void *parameter) {
+void wifiSetup(void* parameter) {
+  wifiTaskHandle = xTaskGetCurrentTaskHandle();
+  WiFiManager wm;
+  wm.setConfigPortalTimeout(
+      180);  // Timeout for WiFi configuration portal (in seconds)
+
+  Serial.println("WiFi setup starting via WiFiManager...");
+  bool res = wm.autoConnect("GPS_TRACKER", "12345678");
+  if (!res) {
+    Serial.println("No input received, restarting...");
+    delay(3000);
+    ESP.restart();
+  }
   WiFi.onEvent(WiFiStationDisconnected,
                WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
-  WiFi.begin(SSID, PASSWORD);
-  Serial.println("Dang khoi dong WiFi...");
+  Serial.println("Wifi connected successfully!");
 
   for (;;) {
     if (WiFi.status() == WL_CONNECTED) {
