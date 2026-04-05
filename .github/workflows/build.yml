@@ -28,6 +28,7 @@ jobs:
         echo '#define PASSWORD "dummy"' >> include/key.h
         echo '#define API_KEY "dummy"' >> include/key.h
         echo '#define DATABASE_URL "dummy"' >> include/key.h
+        echo '#define HERE_API_KEY "dummy"' >> include/key.h
         echo '#endif' >> include/key.h
 
     - name: PlatformIO Core
