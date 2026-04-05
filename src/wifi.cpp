@@ -17,6 +17,10 @@ void wifiSetup(void* parameter) {
   WiFiManager wm;
   wm.setConfigPortalTimeout(
       180);  // Timeout for WiFi configuration portal (in seconds)
+void wifiSetup(void *parameter) {
+  wifiTaskHandle = xTaskGetCurrentTaskHandle();
+  WiFiManager wm;
+  wm.setConfigPortalTimeout(180);
 
   Serial.println("WiFi setup starting via WiFiManager...");
   bool res = wm.autoConnect("GPS_TRACKER", "12345678");
