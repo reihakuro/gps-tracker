@@ -12,6 +12,11 @@ void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
   }
 }
 
+void wifiSetup(void* parameter) {
+  wifiTaskHandle = xTaskGetCurrentTaskHandle();
+  WiFiManager wm;
+  wm.setConfigPortalTimeout(
+      180);  // Timeout for WiFi configuration portal (in seconds)
 void wifiSetup(void *parameter) {
   wifiTaskHandle = xTaskGetCurrentTaskHandle();
   WiFiManager wm;
