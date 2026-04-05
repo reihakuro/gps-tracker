@@ -1,3 +1,13 @@
+// ----------------------------------wifi_location---------------------------------
+// This file is responsible for determining the device's location using nearby
+// Wi-Fi access points and the HERE Location Services API. It runs as a FreeRTOS
+// task on the ESP32, continuously monitoring the Wi-Fi environment for changes.
+// When a change is detected (e.g., new access points appear, or signal
+// strengths change significantly), it sends a request to the HERE API with the
+// current Wi-Fi data to get an updated location estimate. The task also
+// implements a caching mechanism to avoid unnecessary API calls when the Wi-Fi
+// environment remains static, thus optimizing power consumption and API usage.
+// --------------------------------------------------------------------------------
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <WiFi.h>
@@ -17,7 +27,7 @@ String formatMac(String mac) {
   return mac;
 }
 
-void wifiLocationTask(void *parameter) {
+void wifiLocationTask(void* parameter) {
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
@@ -30,17 +40,16 @@ void wifiLocationTask(void *parameter) {
       int n = WiFi.scanNetworks();
 
       if (n > 0) {
-        // Tạo signature để kiểm tra di chuyển
         std::vector<String> macList;
         for (int i = 0; i < ((n > 5) ? 5 : n); i++)
           macList.push_back(WiFi.BSSIDstr(i));
         std::sort(macList.begin(), macList.end());
 
         String currentSignature = "";
-        for (String mac : macList)
-          currentSignature += mac;
+        for (String mac : macList) currentSignature += mac;
 
-        // KIỂM TRA DI CHUYỂN
+        // checking if WiFi environment changed (new APs or signal strength
+        // changed significantly)
         if (isFirstRun || currentSignature != lastWiFiSignature) {
           lastWiFiSignature = currentSignature;
           isFirstRun = false;
@@ -54,7 +63,6 @@ void wifiLocationTask(void *parameter) {
           for (int i = 0; i < max_ap_for_api; i++) {
             JsonObject ap = wlan.createNestedObject();
 
-            // KEY CHUẨN: "mac" (có dấu :) và "rss" (tín hiệu)
             ap["mac"] = WiFi.BSSIDstr(i);
             ap["rss"] = WiFi.RSSI(i);
           }
@@ -94,6 +102,7 @@ void wifiLocationTask(void *parameter) {
             }
             http.end();
           }
+          client.stop();
         } else {
           Serial.println("HERE | Static - No API call needed.");
         }

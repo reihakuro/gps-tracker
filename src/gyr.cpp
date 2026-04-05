@@ -84,34 +84,34 @@ void IRAM_ATTR mpuInterruptHandler() {
 
 void setupMotionInterrupt() {
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x1C); // ACCEL_CONFIG
-  Wire.write(0x01); // Set accelerometer to ±4g range (00: ±2g, 01: ±4g, 10:
-                    // ±8g, 11: ±16g)
+  Wire.write(0x1C);  // ACCEL_CONFIG
+  Wire.write(0x01);  // Set accelerometer to ±4g range (00: ±2g, 01: ±4g, 10:
+                     // ±8g, 11: ±16g)
   Wire.endTransmission();
 
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x1F); // ACCEL_INTEL_CTRL
-  Wire.write(20);   // Set motion detection threshold (20 * 4mg = 80mg)
+  Wire.write(0x1F);  // ACCEL_INTEL_CTRL
+  Wire.write(20);    // Set motion detection threshold (20 * 4mg = 80mg)
   Wire.endTransmission();
 
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x20); // ACCEL_WOM_THR
-  Wire.write(1);    // Set motion detection duration (1 * 1ms = 1ms)
+  Wire.write(0x20);  // ACCEL_WOM_THR
+  Wire.write(1);     // Set motion detection duration (1 * 1ms = 1ms)
   Wire.endTransmission();
 
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x69); // INT_PIN_CFG
-  Wire.write(0x15); // Configure interrupt pin: active high, push-pull, latched
-                    // until cleared
+  Wire.write(0x69);  // INT_PIN_CFG
+  Wire.write(0x15);  // Configure interrupt pin: active high, push-pull, latched
+                     // until cleared
   Wire.endTransmission();
 
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x38); // INT_ENABLE
-  Wire.write(0x40); // Enable motion detection interrupt
+  Wire.write(0x38);  // INT_ENABLE
+  Wire.write(0x40);  // Enable motion detection interrupt
   Wire.endTransmission();
 }
 
-void readGyro(void *parameter) {
+void readGyro(void* parameter) {
   gyroTaskHandle = xTaskGetCurrentTaskHandle();
   pinMode(INT, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(INT), mpuInterruptHandler, RISING);
@@ -119,8 +119,8 @@ void readGyro(void *parameter) {
   Wire.begin();
   // Wire.setClock(400000);
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x6B); // Power management register
-  Wire.write(0x00); // Wake up the MPU-6050
+  Wire.write(0x6B);  // Power management register
+  Wire.write(0x00);  // Wake up the MPU-6050
   Wire.endTransmission(true);
   calibrateGyro();
   setupMotionInterrupt();
@@ -169,22 +169,23 @@ void readGyro(void *parameter) {
       currentData.rotY = rotY;
       currentData.rotZ = rotZ;
 
-      Serial.printf("MPU6050 -> Accel (g): X=%.2f, Y=%.2f, Z=%.2f | Gyro\
+      Serial.printf(
+          "MPU6050 -> Accel (g): X=%.2f, Y=%.2f, Z=%.2f | Gyro\
       (°/s): X=%.2f, Y=%.2f, Z=%.2f\n",
-                    gForceX, gForceY, gForceZ, rotX, rotY, rotZ);
+          gForceX, gForceY, gForceZ, rotX, rotY, rotZ);
 
       xQueueSend(mpuQueue, &currentData, 0);
     } else {
       // Uncomment for debugging, can be removed
       Serial.println("No Data from MPU-6050! Check connections and try again.");
-    } // handle error if needed
+    }  // handle error if needed
     Wire.beginTransmission(MPU_ADDR);
     Wire.write(0x3A);
     Wire.endTransmission(false);
     Wire.requestFrom(MPU_ADDR, 1, true);
     Wire.read();
 
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
   }
   vTaskDelete(NULL);
 }

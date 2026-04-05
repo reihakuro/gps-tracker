@@ -6,22 +6,25 @@
 
 #include "addons/RTDBHelper.h"
 #include "addons/TokenHelper.h"
+#include "buzzer.h"
 #include "gps.h"
 #include "gyr.h"
 #include "key.h"
 
-FirebaseData fbdo;
+FirebaseData fbdo_write;
+FirebaseData fbdo_read;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-void firebaseTask(void *parameter) {
+void firebaseTask(void* parameter) {
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 
+  setupBuzzer();
+
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
-
   config.signer.test_mode = true;
 
   Firebase.begin(&config, &auth);
@@ -36,15 +39,16 @@ void firebaseTask(void *parameter) {
       bool hasData = false;
 
       if (xQueueReceive(mpuQueue, &mpuData, 0) == pdPASS) {
-        json.set("mpu/accel/x", mpuData.gForceX);
-        json.set("mpu/accel/y", mpuData.gForceY);
-        json.set("mpu/accel/z", mpuData.gForceZ);
-        json.set("mpu/gyro/x", mpuData.rotX);
-        json.set("mpu/gyro/y", mpuData.rotY);
-        json.set("mpu/gyro/z", mpuData.rotZ);
         hasData = true;
       }
-
+      if (hasData) {
+        json.set("mpu/gForceX", mpuData.gForceX);
+        json.set("mpu/gForceY", mpuData.gForceY);
+        json.set("mpu/gForceZ", mpuData.gForceZ);
+        json.set("mpu/rotX", mpuData.rotX);
+        json.set("mpu/rotY", mpuData.rotY);
+        json.set("mpu/rotZ", mpuData.rotZ);
+      }
       if (xQueueReceive(gpsQueue, &gpsData, 0) == pdPASS) {
         if (gpsData.isValid) {
           json.set("gps/lat", gpsData.latitude);
@@ -56,14 +60,23 @@ void firebaseTask(void *parameter) {
       }
 
       if (hasData) {
-        if (Firebase.RTDB.updateNode(&fbdo, "/tracker/live", &json)) {
+        if (Firebase.RTDB.updateNode(&fbdo_write, "/tracker/live", &json)) {
           Serial.println("Firebase update successful");
         } else {
-          Serial.printf("Firebase error: %s\n", fbdo.errorReason().c_str());
+          Serial.printf("Firebase error: %s\n",
+                        fbdo_write.errorReason().c_str());
+        }
+      }
+
+      if (Firebase.RTDB.getBool(&fbdo_read, "/tracker/action/ring")) {
+        bool shouldRing = fbdo_read.boolData();
+
+        if (shouldRing) {
+          ringBuzzer();
+          Firebase.RTDB.setBool(&fbdo_write, "/tracker/action/ring", false);
         }
       }
     }
-
     vTaskDelay(2000 / portTICK_PERIOD_MS);
   }
 }
