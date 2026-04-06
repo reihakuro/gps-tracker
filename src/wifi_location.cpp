@@ -1,3 +1,13 @@
+// ----------------------------------wifi_location---------------------------------
+// This file is responsible for determining the device's location using nearby
+// Wi-Fi access points and the HERE Location Services API. It runs as a FreeRTOS
+// task on the ESP32, continuously monitoring the Wi-Fi environment for changes.
+// When a change is detected (e.g., new access points appear, or signal
+// strengths change significantly), it sends a request to the HERE API with the
+// current Wi-Fi data to get an updated location estimate. The task also
+// implements a caching mechanism to avoid unnecessary API calls when the Wi-Fi
+// environment remains static, thus optimizing power consumption and API usage.
+// --------------------------------------------------------------------------------
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <WiFi.h>
@@ -9,7 +19,12 @@
 #include "gps.h"
 #include "key.h"
 
-String lastWiFiSignature = "";
+std::vector<String> lastMacList;
+
+int changeCounter = 0;
+const int CHANGE_THRESHOLD = 2;  // 2 change detected before calling API
+const int MIN_MATCH = 3;         // Match check
+const int RSSI_THRESHOLD = -85;  // Weak signal threshold
 
 String formatMac(String mac) {
   mac.replace(":", "");
@@ -17,7 +32,7 @@ String formatMac(String mac) {
   return mac;
 }
 
-void wifiLocationTask(void *parameter) {
+void wifiLocationTask(void* parameter) {
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
@@ -30,71 +45,99 @@ void wifiLocationTask(void *parameter) {
       int n = WiFi.scanNetworks();
 
       if (n > 0) {
-        // Tạo signature để kiểm tra di chuyển
-        std::vector<String> macList;
-        for (int i = 0; i < ((n > 5) ? 5 : n); i++)
-          macList.push_back(WiFi.BSSIDstr(i));
-        std::sort(macList.begin(), macList.end());
+        std::vector<String> currentMacList;
 
-        String currentSignature = "";
-        for (String mac : macList)
-          currentSignature += mac;
+        // Filter APs based on RSSI and build current MAC list
+        for (int i = 0; i < n; i++) {
+          if (WiFi.RSSI(i) < RSSI_THRESHOLD) continue;
 
-        // KIỂM TRA DI CHUYỂN
-        if (isFirstRun || currentSignature != lastWiFiSignature) {
-          lastWiFiSignature = currentSignature;
-          isFirstRun = false;
+          currentMacList.push_back(WiFi.BSSIDstr(i));
+          if (currentMacList.size() >= 5) break;
+        }
 
-          Serial.println("\n[Wi-Fi] Environment changed. Calling HERE API...");
-
-          DynamicJsonDocument doc(2048);
-          JsonArray wlan = doc.createNestedArray("wlan");
-
-          int max_ap_for_api = (n > 10) ? 10 : n;
-          for (int i = 0; i < max_ap_for_api; i++) {
-            JsonObject ap = wlan.createNestedObject();
-
-            // KEY CHUẨN: "mac" (có dấu :) và "rss" (tín hiệu)
-            ap["mac"] = WiFi.BSSIDstr(i);
-            ap["rss"] = WiFi.RSSI(i);
+        // Counting matches between current and last MAC lists
+        int matchCount = 0;
+        for (const String& mac : currentMacList) {
+          if (std::find(lastMacList.begin(), lastMacList.end(), mac) !=
+              lastMacList.end()) {
+            matchCount++;
           }
+        }
 
-          String requestBody;
-          serializeJson(doc, requestBody);
+        // 3. Is really changes?
+        bool isChanged = (matchCount < MIN_MATCH) && (!lastMacList.empty());
 
-          Serial.println("--- FINAL JSON TO HERE ---");
-          Serial.println(requestBody);
+        if (isFirstRun || isChanged) {
+          changeCounter++;
 
-          WiFiClientSecure client;
-          client.setInsecure();
-          HTTPClient http;
+          // 4. Debounce changes: Only call API if we see consistent changes
+          if (isFirstRun || changeCounter >= CHANGE_THRESHOLD) {
+            Serial.println(
+                "\n[Wi-Fi] Environment changed. Calling HERE API...");
 
-          String url = "https://positioning.hereapi.com/v2/locate?apiKey=" +
-                       String(HERE_API_KEY);
+            lastMacList = currentMacList;
+            changeCounter = 0;
+            isFirstRun = false;
 
-          if (http.begin(client, url)) {
-            http.addHeader("Content-Type", "application/json");
-            int httpCode = http.POST(requestBody);
+            // JSON payload for HERE API
+            DynamicJsonDocument doc(2048);
+            JsonArray wlan = doc.createNestedArray("wlan");
 
-            if (httpCode == 200) {
-              DynamicJsonDocument res(1024);
-              deserializeJson(res, http.getString());
-
-              GPSData currentGPS;
-              currentGPS.latitude = res["location"]["lat"];
-              currentGPS.longitude = res["location"]["lng"];
-              currentGPS.isValid = true;
-
-              xQueueSend(gpsQueue, &currentGPS, 0);
-              Serial.printf("HERE | OK! Lat: %.6f, Lng: %.6f\n",
-                            currentGPS.latitude, currentGPS.longitude);
-            } else {
-              Serial.printf("HERE | Error %d\n", httpCode);
-              Serial.println("Details: " + http.getString());
+            // Limit the number of APs sent to HERE API to 10
+            int max_ap_for_api = (n > 10) ? 10 : n;
+            for (int i = 0; i < max_ap_for_api; i++) {
+              JsonObject ap = wlan.createNestedObject();
+              ap["mac"] = WiFi.BSSIDstr(i);
+              ap["rss"] = WiFi.RSSI(i);
             }
-            http.end();
+
+            String requestBody;
+            serializeJson(doc, requestBody);
+
+            Serial.println("--- FINAL JSON TO HERE ---");
+            Serial.println(requestBody);
+
+            WiFiClientSecure client;
+            client.setInsecure();  // bypass SSL cert
+            HTTPClient http;
+
+            String url = "https://positioning.hereapi.com/v2/locate?apiKey=" +
+                         String(HERE_API_KEY);
+
+            if (http.begin(client, url)) {
+              http.addHeader("Content-Type", "application/json");
+              int httpCode = http.POST(requestBody);
+
+              if (httpCode == 200) {
+                DynamicJsonDocument res(1024);
+                deserializeJson(res, http.getString());
+
+                GPSData currentGPS;
+                currentGPS.latitude = res["location"]["lat"];
+                currentGPS.longitude = res["location"]["lng"];
+                currentGPS.isValid = true;
+
+                // Queue GPS data to be sent to Firebase
+                xQueueSend(gpsQueue, &currentGPS, 0);
+                Serial.printf("HERE | OK! Lat: %.6f, Lng: %.6f\n",
+                              currentGPS.latitude, currentGPS.longitude);
+              } else {
+                Serial.printf("HERE | Error %d\n", httpCode);
+                Serial.println("Details: " + http.getString());
+              }
+              http.end();
+            }
+            client.stop();
+            // End of API call
+
+          } else {
+            Serial.printf(
+                "HERE | Change detected (%d/%d). Waiting for confirmation...\n",
+                changeCounter, CHANGE_THRESHOLD);
           }
         } else {
+          // No significant change detected, reset counter and skip API call
+          changeCounter = 0;
           Serial.println("HERE | Static - No API call needed.");
         }
       }
