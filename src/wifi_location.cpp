@@ -22,9 +22,9 @@
 std::vector<String> lastMacList;
 
 int changeCounter = 0;
-const int CHANGE_THRESHOLD = 2;  // 2 change detected before calling API
-const int MIN_MATCH = 3;         // Match check
-const int RSSI_THRESHOLD = -85;  // Weak signal threshold
+const int CHANGE_THRESHOLD = 2; // 2 change detected before calling API
+const int MIN_MATCH = 3;        // Match check
+const int RSSI_THRESHOLD = -85; // Weak signal threshold
 
 String formatMac(String mac) {
   mac.replace(":", "");
@@ -32,7 +32,7 @@ String formatMac(String mac) {
   return mac;
 }
 
-void wifiLocationTask(void* parameter) {
+void wifiLocationTask(void *parameter) {
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
@@ -49,15 +49,17 @@ void wifiLocationTask(void* parameter) {
 
         // Filter APs based on RSSI and build current MAC list
         for (int i = 0; i < n; i++) {
-          if (WiFi.RSSI(i) < RSSI_THRESHOLD) continue;
+          if (WiFi.RSSI(i) < RSSI_THRESHOLD)
+            continue;
 
           currentMacList.push_back(WiFi.BSSIDstr(i));
-          if (currentMacList.size() >= 5) break;
+          if (currentMacList.size() >= 5)
+            break;
         }
 
         // Counting matches between current and last MAC lists
         int matchCount = 0;
-        for (const String& mac : currentMacList) {
+        for (const String &mac : currentMacList) {
           if (std::find(lastMacList.begin(), lastMacList.end(), mac) !=
               lastMacList.end()) {
             matchCount++;
@@ -98,7 +100,7 @@ void wifiLocationTask(void* parameter) {
             Serial.println(requestBody);
 
             WiFiClientSecure client;
-            client.setInsecure();  // bypass SSL cert
+            client.setInsecure(); // bypass SSL cert
             HTTPClient http;
 
             String url = "https://positioning.hereapi.com/v2/locate?apiKey=" +

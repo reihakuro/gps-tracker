@@ -2,8 +2,8 @@
 
 #include <Arduino.h>
 
-#define BUZZER_CHANNEL 0  //
-#define BUZZER_FREQ 2000  //
+#define BUZZER_CHANNEL 0 //
+#define BUZZER_FREQ 2000 //
 #define BUZZER_RESOLUTION 8
 
 void setupBuzzer() {

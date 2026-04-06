@@ -64,15 +64,15 @@ void calibrateGyro() {
   gyroOffsetZ = (float)sumZ / numSamples;
 }
 
-void readGyro(void* parameter) {
+void readGyro(void *parameter) {
   gyroTaskHandle = xTaskGetCurrentTaskHandle();
 
   Wire.begin();
   // Wire.setClock(400000);
 
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x6B);  // Power management register
-  Wire.write(0x00);  // Wake up the MPU-6050
+  Wire.write(0x6B); // Power management register
+  Wire.write(0x00); // Wake up the MPU-6050
   Wire.endTransmission(true);
 
   calibrateGyro();

@@ -33,7 +33,7 @@ void streamTimeoutCallback(bool timeout) {
   }
 }
 
-void firebaseTask(void* parameter) {
+void firebaseTask(void *parameter) {
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
@@ -63,7 +63,7 @@ void firebaseTask(void* parameter) {
     if (Firebase.ready()) {
       // Check if we need to ring the buzzer
       if (triggerBuzzer) {
-        ringBuzzer();  // Ring the buzzer
+        ringBuzzer(); // Ring the buzzer
         Firebase.RTDB.setBool(&fbdo_write, "/tracker/action/ring", false);
         triggerBuzzer = false;
       }
