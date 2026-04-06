@@ -1,17 +1,27 @@
 #include "buzzer.h"
 
+#include <Arduino.h>
+
+#define BUZZER_CHANNEL 0  //
+#define BUZZER_FREQ 2000  //
+#define BUZZER_RESOLUTION 8
+
 void setupBuzzer() {
-  pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(BUZZER_PIN, LOW);
+  ledcSetup(BUZZER_CHANNEL, BUZZER_FREQ, BUZZER_RESOLUTION);
+  ledcAttachPin(BUZZER_PIN, BUZZER_CHANNEL);
+  ledcWrite(BUZZER_CHANNEL, 0);
 }
 
 void ringBuzzer() {
-  Serial.println("[Buzzer]Ringing");
+  Serial.println("[Buzzer] Ringing");
 
   for (int i = 0; i < 3; i++) {
-    digitalWrite(BUZZER_PIN, HIGH);
+    ledcWrite(BUZZER_CHANNEL, 128);
     vTaskDelay(200 / portTICK_PERIOD_MS);
-    digitalWrite(BUZZER_PIN, LOW);
+
+    ledcWrite(BUZZER_CHANNEL, 0);
     vTaskDelay(200 / portTICK_PERIOD_MS);
   }
+
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
 }
