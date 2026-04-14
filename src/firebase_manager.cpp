@@ -29,17 +29,11 @@ void streamCallback(FirebaseStream data) {
 
 void streamTimeoutCallback(bool timeout) {
   if (timeout) {
-    Serial.println("Firebase stream timeout, resuming...");
+    Serial.println("Timeout");
   }
 }
 
-void firebaseTask(void *parameter) {
-  while (WiFi.status() != WL_CONNECTED) {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-
-  setupBuzzer();
-
+bool initFirebase() {
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
   config.signer.test_mode = true;
@@ -48,74 +42,87 @@ void firebaseTask(void *parameter) {
   Firebase.reconnectWiFi(true);
 
   if (!Firebase.RTDB.beginStream(&fbdo_read, "/tracker/action/ring")) {
-    Serial.printf("Stream begin error, %s\n", fbdo_read.errorReason().c_str());
+    return false;
   }
+
   Firebase.RTDB.setStreamCallback(&fbdo_read, streamCallback,
                                   streamTimeoutCallback);
+  return true;
+}
 
-  MPUData mpuData;
-  GPSData gpsData;
+void firebaseTask(void* parameter) {
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Connecting to WiFi...");
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+
+  setupBuzzer();
+  initFirebase();
 
   unsigned long lastUploadTime = 0;
   const unsigned long uploadInterval = 3000;
 
   for (;;) {
     if (Firebase.ready()) {
-      // Check if we need to ring the buzzer
-      if (triggerBuzzer) {
-        ringBuzzer(); // Ring the buzzer
-        Firebase.RTDB.setBool(&fbdo_write, "/tracker/action/ring", false);
-        triggerBuzzer = false;
-      }
+      handleBuzzerAction();
 
       if (millis() - lastUploadTime >= uploadInterval) {
         lastUploadTime = millis();
-
-        FirebaseJson json;
-        bool hasData = false;
-        // Check for new MPU data in the queue
-        bool mpuUpdated = false;
-        while (xQueueReceive(mpuQueue, &mpuData, 0) == pdPASS) {
-          mpuUpdated = true;
-        }
-
-        if (mpuUpdated) {
-          hasData = true;
-          json.set("mpu/gForceX", mpuData.gForceX);
-          json.set("mpu/gForceY", mpuData.gForceY);
-          json.set("mpu/gForceZ", mpuData.gForceZ);
-          json.set("mpu/rotX", mpuData.rotX);
-          json.set("mpu/rotY", mpuData.rotY);
-          json.set("mpu/rotZ", mpuData.rotZ);
-        }
-        // Check for new GPS data in the queue
-
-        bool gpsUpdated = false;
-        if (xQueueReceive(gpsQueue, &gpsData, 0) == pdPASS) {
-          gpsUpdated = true;
-        }
-
-        if (gpsUpdated) {
-          if (gpsData.isValid) {
-            json.set("gps/lat", gpsData.latitude);
-            json.set("gps/lng", gpsData.longitude);
-            json.set("gps/speed", gpsData.speed);
-            json.set("gps/sats", gpsData.satellites);
-            hasData = true;
-          }
-        }
-
-        if (hasData) {
-          if (Firebase.RTDB.updateNode(&fbdo_write, "/tracker/live", &json)) {
-            Serial.println("Firebase update successful");
-          } else {
-            Serial.printf("Firebase error: %s\n",
-                          fbdo_write.errorReason().c_str());
-          }
-        }
+        processAndUploadSensorData();
       }
     }
-    // Serial.printf("Free Heap: %d\n", ESP.getFreeHeap()); //debug memory leak
+    // Serial.printf("[DEBUG-MEM] Free Heap: %d\n", ESP.getFreeHeap());
+
     vTaskDelay(1500 / portTICK_PERIOD_MS);
+  }
+}
+
+void handleBuzzerAction() {
+  if (triggerBuzzer) {
+    ringBuzzer();
+    triggerBuzzer = false;
+  }
+}
+
+void processAndUploadSensorData() {
+  FirebaseJson json;
+  bool hasData = false;
+  MPUData mpuData;
+  GPSData gpsData;
+
+  bool mpuUpdated = false;
+  while (xQueueReceive(mpuQueue, &mpuData, 0) == pdPASS) {
+    mpuUpdated = true;
+  }
+
+  if (mpuUpdated) {
+    hasData = true;
+    json.set("mpu/gForceX", mpuData.gForceX);
+    json.set("mpu/gForceY", mpuData.gForceY);
+    json.set("mpu/gForceZ", mpuData.gForceZ);
+    json.set("mpu/rotX", mpuData.rotX);
+    json.set("mpu/rotY", mpuData.rotY);
+    json.set("mpu/rotZ", mpuData.rotZ);
+  }
+
+  bool gpsUpdated = false;
+  if (xQueueReceive(gpsQueue, &gpsData, 0) == pdPASS) {
+    gpsUpdated = true;
+  }
+
+  if (gpsUpdated && gpsData.isValid) {
+    hasData = true;
+    json.set("gps/lat", gpsData.latitude);
+    json.set("gps/lng", gpsData.longitude);
+    json.set("gps/speed", gpsData.speed);
+    json.set("gps/sats", gpsData.satellites);
+  }
+
+  if (hasData) {
+    if (Firebase.RTDB.updateNode(&fbdo_write, "/tracker/live", &json)) {
+      Serial.println("Uploaded.");
+    } else {
+      Serial.printf("Firebase Error: %s\n", fbdo_write.errorReason().c_str());
+    }
   }
 }
