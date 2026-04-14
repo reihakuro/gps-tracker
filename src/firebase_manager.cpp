@@ -50,7 +50,7 @@ bool initFirebase() {
   return true;
 }
 
-void firebaseTask(void* parameter) {
+void firebaseTask(void *parameter) {
   while (WiFi.status() != WL_CONNECTED) {
     Serial.println("Connecting to WiFi...");
     vTaskDelay(1000 / portTICK_PERIOD_MS);
