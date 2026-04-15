@@ -50,40 +50,6 @@ bool initFirebase() {
   return true;
 }
 
-void firebaseTask(void *parameter) {
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Connecting to WiFi...");
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-
-  setupBuzzer();
-  initFirebase();
-
-  unsigned long lastUploadTime = 0;
-  const unsigned long uploadInterval = 3000;
-
-  for (;;) {
-    if (Firebase.ready()) {
-      handleBuzzerAction();
-
-      if (millis() - lastUploadTime >= uploadInterval) {
-        lastUploadTime = millis();
-        processAndUploadSensorData();
-      }
-    }
-    // Serial.printf("[DEBUG-MEM] Free Heap: %d\n", ESP.getFreeHeap());
-
-    vTaskDelay(1500 / portTICK_PERIOD_MS);
-  }
-}
-
-void handleBuzzerAction() {
-  if (triggerBuzzer) {
-    ringBuzzer();
-    triggerBuzzer = false;
-  }
-}
-
 void processAndUploadSensorData() {
   FirebaseJson json;
   bool hasData = false;
@@ -124,5 +90,39 @@ void processAndUploadSensorData() {
     } else {
       Serial.printf("Firebase Error: %s\n", fbdo_write.errorReason().c_str());
     }
+  }
+}
+
+void handleBuzzerAction() {
+  if (triggerBuzzer) {
+    ringBuzzer();
+    triggerBuzzer = false;
+  }
+}
+
+void firebaseTask(void* parameter) {
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Connecting to WiFi...");
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+
+  setupBuzzer();
+  initFirebase();
+
+  unsigned long lastUploadTime = 0;
+  const unsigned long uploadInterval = 3000;
+
+  for (;;) {
+    if (Firebase.ready()) {
+      handleBuzzerAction();
+
+      if (millis() - lastUploadTime >= uploadInterval) {
+        lastUploadTime = millis();
+        processAndUploadSensorData();
+      }
+    }
+    // Serial.printf("[DEBUG-MEM] Free Heap: %d\n", ESP.getFreeHeap());
+
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
   }
 }
