@@ -12,6 +12,7 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <math.h>
 
 #include <algorithm>
 #include <vector>
@@ -26,10 +27,30 @@ const int CHANGE_THRESHOLD = 2; // 2 change detected before calling API
 const int MIN_MATCH = 3;        // Match check
 const int RSSI_THRESHOLD = -85; // Weak signal threshold
 
+// Các hằng số cho bộ lọc vận tốc
+const float MIN_DISTANCE_M = 30.0; // Dưới 30m coi như đứng im (lọc nhiễu tọa độ)
+const float MAX_SPEED_KMH = 150.0; // Tốc độ tối đa hợp lý để chống văng tọa độ
+
 String formatMac(String mac) {
   mac.replace(":", "");
   mac.toUpperCase();
   return mac;
+}
+
+// Hàm tính khoảng cách giữa 2 tọa độ (mét) bằng công thức Haversine
+float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
+  float R = 6371000; // Bán kính Trái Đất (mét)
+  float phi1 = lat1 * M_PI / 180;
+  float phi2 = lat2 * M_PI / 180;
+  float dPhi = (lat2 - lat1) * M_PI / 180;
+  float dLambda = (lon2 - lon1) * M_PI / 180;
+
+  float a = sin(dPhi / 2) * sin(dPhi / 2) +
+            cos(phi1) * cos(phi2) *
+            sin(dLambda / 2) * sin(dLambda / 2);
+  float c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+  return R * c; 
 }
 
 void wifiLocationTask(void *parameter) {
@@ -39,6 +60,12 @@ void wifiLocationTask(void *parameter) {
   vTaskDelay(5000 / portTICK_PERIOD_MS);
 
   bool isFirstRun = true;
+  
+  // Biến lưu trữ trạng thái cho việc tính vận tốc
+  static float lastLat = 0.0;
+  static float lastLng = 0.0;
+  static unsigned long lastTime = 0;
+  static float lastValidSpeed = 0.0;
 
   for (;;) {
     if (WiFi.status() == WL_CONNECTED) {
@@ -119,10 +146,49 @@ void wifiLocationTask(void *parameter) {
                 currentGPS.longitude = res["location"]["lng"];
                 currentGPS.isValid = true;
 
+                // --- TÍNH TOÁN VẬN TỐC (CÓ BỘ LỌC) ---
+                unsigned long currentTime = millis();
+
+                if (lastLat != 0.0 && lastLng != 0.0 && lastTime != 0) {
+                  float distanceMeters = calculateDistance(lastLat, lastLng, currentGPS.latitude, currentGPS.longitude);
+                  float timeElapsedSeconds = (currentTime - lastTime) / 1000.0;
+                  
+                  if (timeElapsedSeconds > 0) {
+                    if (distanceMeters < MIN_DISTANCE_M) {
+                        // Lọc nhiễu: Di chuyển quá ít -> Đứng yên
+                        currentGPS.speed = 0.0;
+                        lastValidSpeed = 0.0;
+                    } 
+                    else {
+                        float rawSpeedMPS = distanceMeters / timeElapsedSeconds; 
+                        float rawSpeedKMH = rawSpeedMPS * 3.6; 
+                        
+                        if (rawSpeedKMH > MAX_SPEED_KMH) {
+                            // Lọc nhiễu: Văng tọa độ -> Giữ tốc độ cũ
+                            Serial.println("[WARNING] Văng tọa độ do nhiễu Wi-Fi. Bỏ qua vận tốc này.");
+                            currentGPS.speed = lastValidSpeed; 
+                        } else {
+                            currentGPS.speed = rawSpeedKMH;
+                            lastValidSpeed = rawSpeedKMH;
+                        }
+                    }
+                  } else {
+                    currentGPS.speed = 0.0;
+                  }
+                } else {
+                  currentGPS.speed = 0.0; // Lần đầu lấy mẫu
+                }
+
+                // Lưu lại trạng thái cho lần gọi API tiếp theo
+                lastLat = currentGPS.latitude;
+                lastLng = currentGPS.longitude;
+                lastTime = currentTime;
+                // ----------------------------------------
+
                 // Queue GPS data to be sent to Firebase
                 xQueueSend(gpsQueue, &currentGPS, 0);
-                Serial.printf("HERE | OK! Lat: %.6f, Lng: %.6f\n",
-                              currentGPS.latitude, currentGPS.longitude);
+                Serial.printf("HERE | OK! Lat: %.6f, Lng: %.6f, Speed: %.2f km/h\n",
+                              currentGPS.latitude, currentGPS.longitude, currentGPS.speed);
               } else {
                 Serial.printf("HERE | Error %d\n", httpCode);
                 Serial.println("Details: " + http.getString());
