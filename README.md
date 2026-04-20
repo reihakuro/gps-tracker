@@ -47,9 +47,22 @@ The system is built around an ESP32 as the core controller. It collects data fro
 The processed data is transmitted to a cloud-based real-time database via WiFi. Users can monitor device status remotely and trigger actions such as activating the buzzer for physical localization.
 
 A WiFi captive portal is used for network configuration and ensures stable connectivity.
+### ■ Schematic
+![Schematic Diagram](docs/schematic/schematic.png)
+
+| Pin | Connect | 
+|----------|-----------|
+| 3V3 | MPU VCC & B+ |
+| GND | GND & B- |
+| 22 | SCL |
+| 21 | SDA |
 
 ## Dependencies
 
 ## Configuration
 
-
+## Implementation
+<p align="center">
+  <img src="docs/prod/bread.jpg" width="45%" />
+  <img src="docs/prod/proto.jpg" width="45%" />
+</p>
