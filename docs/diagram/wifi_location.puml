@@ -1,0 +1,32 @@
+@startuml "Task: WiFi Location"
+
+start
+:Wait for WiFi Connection;
+:vTaskDelay(5000ms);
+
+repeat
+    if (WiFi Connected?) then (yes)
+        :Scan Networks;
+        :Filter Top 5 APs (RSSI > -85dBm);
+        :Count matches with lastMacList;
+        
+        if (Environment Changed?) then (yes)
+            :Increment changeCounter;
+            if (First Run OR counter >= 2?) then (yes)
+                :Construct JSON (max 10 APs);
+                :POST to HERE API;
+                if (HTTP 200 OK?) then (yes)
+                    :Parse Lat/Lng;
+                    :xQueueSend(gpsQueue);
+                endif
+                :Update lastMacList;
+                :Reset counter;
+            endif
+        else (no)
+            :Reset changeCounter (Static);
+        endif
+        :WiFi.scanDelete();
+    endif
+    :vTaskDelay(10000ms);
+repeat while (true)
+@enduml

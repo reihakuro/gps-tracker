@@ -1,0 +1,22 @@
+@startuml "Task: Read Gyroscope & Accelerometer"
+
+start
+:Initialize I2C (Wire.begin);
+:Wake up MPU-6050 (Register 0x6B);
+:Calibrate Gyro (200 samples);
+note right:  Offset calculation
+
+repeat
+    :Request 14 bytes from MPU-6050;
+    if (Data Available?) then (yes)
+        :Read Raw Accel & Gyro;
+        :Convert Raw to G-Force/DPS;
+        :Apply Deadband (threshold 1.0);
+        :Package into MPUData struct;
+        :xQueueSend(mpuQueue);
+    else (no)
+        :Print Error Connection;
+    endif
+    :vTaskDelay(500ms);
+repeat while ()
+@enduml

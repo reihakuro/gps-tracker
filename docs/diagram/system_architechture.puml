@@ -1,0 +1,35 @@
+@startuml "ESP32 GPS Tracker - System Architecture"
+
+node "Hardware" {
+    [MPU-6050]
+    [Buzzer]
+}
+
+cloud "Cloud Services" {
+    [HERE API]
+    [Firebase RTDB]
+}
+
+package "FreeRTOS Tasks" {
+    [Read Gyro Task] as GyroTask
+    [WiFi Location Task] as LocTask
+    [Firebase Task] as FBTask
+    [WiFi Setup Task] as WiFiTask
+}
+
+queue "mpuQueue" as MQueue
+queue "gpsQueue" as GQueue
+
+[MPU-6050] --> GyroTask : I2C Data
+GyroTask --> MQueue : MPUData
+LocTask --> GQueue : GPSData
+WiFiTask -down-> [WiFi Connection] : Manage
+
+MQueue --> FBTask
+GQueue --> FBTask
+FBTask --> [Firebase RTDB] : Upload
+[Firebase RTDB] .right.> FBTask : Stream "ring"
+FBTask --> [Buzzer] : trigger
+[HERE API] <-up-> LocTask : Positioning
+
+@enduml

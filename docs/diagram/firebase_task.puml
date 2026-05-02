@@ -1,0 +1,27 @@
+@startuml "Task: Firebase Manager"
+
+start
+:Wait WiFi;
+:Initialize Buzzer;
+:Initialize Firebase Stream;
+note right: Listen to "/tracker/action/ring"
+
+repeat
+    if (Firebase Ready?) then (yes)
+        if (triggerBuzzer == true?) then (yes)
+            :Ring Buzzer (3 pulses);
+            :triggerBuzzer = false;
+        endif
+        
+        if (3 seconds passed?) then (yes)
+            :Empty mpuQueue -> Get latest;
+            :Check gpsQueue -> Get latest;
+            if (Has New Data?) then (yes)
+                :Construct FirebaseJson;
+                :Firebase.RTDB.updateNode();
+            endif
+        endif
+    endif
+    :vTaskDelay(1500ms);
+repeat while (true)
+@enduml
